@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="g11" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="hsl(67, 45%, 32%)"/>
+      <stop offset="100%" stop-color="hsl(107, 55%, 22%)"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#g11)"/>
+  <circle cx="650" cy="120" r="180" fill="hsl(67, 40%, 45%)" opacity="0.25"/>
+  <circle cx="120" cy="500" r="140" fill="hsl(67, 40%, 45%)" opacity="0.18"/>
+  <rect x="80" y="430" width="240" height="90" rx="12" fill="rgba(255,255,255,0.12)"/>
+  <text x="104" y="470" font-family="sans-serif" font-size="26" font-weight="700" fill="#ffffff">Guild demo</text>
+  <text x="104" y="500" font-family="sans-serif" font-size="16" fill="rgba(255,255,255,0.75)">portfolio image 11</text>
+  <text x="60" y="140" font-family="sans-serif" font-size="120" font-weight="800" fill="rgba(255,255,255,0.14)">G</text>
+</svg>
