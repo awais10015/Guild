@@ -4,23 +4,12 @@ import { admin } from "better-auth/plugins";
 import { MongoClient, type Db } from "mongodb";
 import { connectDB } from "@/lib/db";
 import { sendMail, mailEnabled } from "@/lib/mail";
+import { mongoDbName, mongoUri } from "@/lib/mongodb";
 
 const globalForAuth = globalThis as unknown as {
   __guildAuth: ReturnType<typeof createAuth> | null;
   __guildAuthClient: MongoClient | null;
 };
-
-const DEFAULT_URI =
-  "mongodb://127.0.0.1:27017/guild?replicaSet=rs0&directConnection=true";
-
-function dbNameFromUri(uri: string): string {
-  try {
-    const path = new URL(uri).pathname.replace("/", "");
-    return path || "guild";
-  } catch {
-    return "guild";
-  }
-}
 
 /**
  * Better Auth gets its OWN MongoDB client (same database as Mongoose).
@@ -29,7 +18,7 @@ function dbNameFromUri(uri: string): string {
  */
 async function getAuthDb(): Promise<Db> {
   if (!globalForAuth.__guildAuthClient) {
-    const client = new MongoClient(process.env.MONGODB_URI || DEFAULT_URI, {
+    const client = new MongoClient(mongoUri(), {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 8000,
     });
@@ -37,17 +26,32 @@ async function getAuthDb(): Promise<Db> {
     globalForAuth.__guildAuthClient = client;
   }
   const client = globalForAuth.__guildAuthClient;
-  return client.db(dbNameFromUri(process.env.MONGODB_URI || DEFAULT_URI));
+  return client.db(mongoDbName());
+}
+
+function authTrustedOrigins(): string[] {
+  const origins = new Set<string>();
+  for (const raw of [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.BETTER_AUTH_URL,
+    ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",") ?? []),
+  ]) {
+    const v = raw?.trim();
+    if (!v) continue;
+    origins.add(v.replace(/\/$/, ""));
+  }
+  return [...origins];
 }
 
 function createAuth(db: Db) {
   const requireVerification = process.env.AUTH_REQUIRE_EMAIL_VERIFICATION === "true";
+  const trustedOrigins = authTrustedOrigins();
 
   return betterAuth({
     appName: "Guild",
     secret: process.env.BETTER_AUTH_SECRET || "guild-dev-secret-change-me-in-production",
     database: mongodbAdapter(db),
-    trustedOrigins: process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : [],
+    ...(trustedOrigins.length ? { trustedOrigins } : {}),
 
     emailAndPassword: {
       enabled: true,

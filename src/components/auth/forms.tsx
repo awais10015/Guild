@@ -6,10 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { authClient, type SessionData } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function LoginForm() {
@@ -60,7 +61,7 @@ export function LoginForm() {
           </div>
           <div>
             <Label htmlFor="lg-pass">Password</Label>
-            <Input id="lg-pass" name="password" type="password" required autoComplete="current-password" className="mt-1.5" />
+            <PasswordInput id="lg-pass" name="password" required autoComplete="current-password" className="mt-1.5" />
           </div>
           <div className="flex justify-end">
             <Link href="/forgot-password" className="text-xs text-primary hover:underline">
@@ -77,8 +78,41 @@ export function LoginForm() {
             Create an account
           </Link>
         </p>
+        <DemoAccountsHint />
       </CardContent>
     </Card>
+  );
+}
+
+function DemoAccountsHint() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-6 border-t pt-4">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between text-left text-xs font-medium text-muted-foreground hover:text-foreground"
+        onClick={() => setOpen((v) => !v)}
+      >
+        Demo accounts (password <span className="font-mono">Demo@1234</span>)
+        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+          <li>
+            Admin: <span className="font-mono text-foreground/80">admin@guild.app</span> — password in{" "}
+            <span className="font-mono">ADMIN_SEED_PASSWORD</span> (<span className="font-mono">.env</span>, default{" "}
+            <span className="font-mono">Admin@1234</span>)
+          </li>
+          <li>
+            Customer: <span className="font-mono text-foreground/80">emily@demo.guild.app</span>
+          </li>
+          <li>
+            Provider: <span className="font-mono text-foreground/80">farhan.cooling@guild.app</span>
+          </li>
+          <li className="pt-1">See README for the full list after <span className="font-mono">npm run db:seed</span>.</li>
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -132,7 +166,7 @@ export function RegisterForm() {
           </div>
           <div>
             <Label htmlFor="rg-pass">Password</Label>
-            <Input id="rg-pass" name="password" type="password" required minLength={8} autoComplete="new-password" className="mt-1.5" />
+            <PasswordInput id="rg-pass" name="password" required minLength={8} autoComplete="new-password" className="mt-1.5" />
             <p className="mt-1 text-xs text-muted-foreground">At least 8 characters.</p>
           </div>
           <Button type="submit" className="w-full" disabled={busy}>
@@ -259,11 +293,11 @@ export function ResetPasswordForm() {
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
             <Label htmlFor="rs-pass">New password</Label>
-            <Input id="rs-pass" name="password" type="password" required minLength={8} autoComplete="new-password" className="mt-1.5" />
+            <PasswordInput id="rs-pass" name="password" required minLength={8} autoComplete="new-password" className="mt-1.5" />
           </div>
           <div>
             <Label htmlFor="rs-confirm">Confirm password</Label>
-            <Input id="rs-confirm" name="confirm" type="password" required minLength={8} autoComplete="new-password" className="mt-1.5" />
+            <PasswordInput id="rs-confirm" name="confirm" required minLength={8} autoComplete="new-password" className="mt-1.5" />
           </div>
           <Button type="submit" className="w-full" disabled={busy}>
             {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Update password

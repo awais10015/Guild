@@ -6,6 +6,7 @@ const customerProfileSchema = new Schema(
     defaultPhone: { type: String, default: "" },
     address: {
       label: { type: String, default: "" },
+      country: { type: String, default: "" },
       city: { type: String, default: "" },
       area: { type: String, default: "" },
       streetAddress: { type: String, default: "" },

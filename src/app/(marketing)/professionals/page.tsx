@@ -15,6 +15,7 @@ import { Category, Profession, User } from "@/models";
 import { GLOBAL_CITIES } from "@/lib/constants";
 import { getSession } from "@/lib/guards";
 import { fromGeoJSONPoint } from "@/lib/geo";
+import { uniqueSortedCities } from "@/lib/text";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,7 @@ export default async function ProfessionalsPage({ searchParams }: Props) {
       .filter((p) => String(p.categoryId) === String(c._id))
       .map((p) => ({ id: String(p._id), name: p.name, slug: p.slug })),
   }));
-  const cityOptions = [...new Set([...cities, ...GLOBAL_CITIES.map((c) => c.name)])];
+  const cityOptions = uniqueSortedCities([...cities, ...GLOBAL_CITIES.map((c) => c.name)]);
 
   const markers = result.items
     .map((item) => {

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { AppChrome } from "@/components/layout/app-chrome";
 import { DashboardShell, type NavItem } from "@/components/layout/dashboard-shell";
 import { getSession } from "@/lib/guards";
 import { connectDB } from "@/lib/db";
@@ -25,8 +26,10 @@ export default async function ProviderLayout({ children }: { children: React.Rea
   ];
 
   return (
-    <DashboardShell nav={nav} title="Provider studio" subtitle={session.user.name}>
-      {children}
-    </DashboardShell>
+    <AppChrome>
+      <DashboardShell nav={nav} title="Provider studio" subtitle={session.user.name}>
+        {children}
+      </DashboardShell>
+    </AppChrome>
   );
 }

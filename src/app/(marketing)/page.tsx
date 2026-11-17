@@ -11,6 +11,7 @@ import { connectDB } from "@/lib/db";
 import { Category, Profession, User } from "@/models";
 import { GLOBAL_CITIES } from "@/lib/constants";
 import { getSession } from "@/lib/guards";
+import { uniqueSortedCities } from "@/lib/text";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function HomePage() {
     const key = String(p.categoryId);
     profCountByCategory.set(key, (profCountByCategory.get(key) ?? 0) + 1);
   }
-  const cityOptions = [...new Set([...cities, ...GLOBAL_CITIES.map((c) => c.name)])];
+  const cityOptions = uniqueSortedCities([...cities, ...GLOBAL_CITIES.map((c) => c.name)]);
 
   return (
     <>

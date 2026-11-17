@@ -1,4 +1,4 @@
-import { GLOBAL_CITIES } from "@/lib/constants";
+import { findCityInfo } from "@/lib/constants";
 
 export interface LatLng {
   lat: number;
@@ -33,9 +33,7 @@ export function fromGeoJSONPoint(point?: { coordinates?: number[] } | null): Lat
   return { lng: c[0], lat: c[1] };
 }
 
-export function cityCenter(name: string): LatLng | null {
-  const city = GLOBAL_CITIES.find(
-    (c) => c.name.toLowerCase() === (name || "").toLowerCase().trim(),
-  );
+export function cityCenter(name: string, country?: string): LatLng | null {
+  const city = findCityInfo(name, country) ?? findCityInfo(name);
   return city ? { lat: city.lat, lng: city.lng } : null;
 }

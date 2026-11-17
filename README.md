@@ -37,18 +37,39 @@ npm start                     # serves the standalone server on :3000
 provided by Pusher Channels — no extra local service is needed.
 
 On first boot against an **empty** database the app seeds itself
-(`AUTO_SEED=true`): 12 categories, 15 professions, 8 demo providers with
+(`AUTO_SEED=true`): 13 categories, 15 professions, 8 demo providers with
 services, 2 customers, sample bookings, conversations and reviews.
 Re-seed manually with `npm run db:seed`.
 
 ## Demo accounts
 
-| Role      | Email                    | Password    |
-| --------- | ------------------------ | ----------- |
-| Admin     | `admin@guild.app`         | `Admin@1234` |
-| Customer  | `emily@demo.guild.app`    | `Demo@1234` |
-| Customer  | `james@demo.guild.app`    | `Demo@1234` |
-| Providers | `marcus.reed@guild.app`, `farhan.cooling@guild.app`, `sparklehome@guild.app`, `dave.lane@guild.app`, … | `Demo@1234` |
+All demo users share the same password unless you override `DEMO_PASSWORD` in the environment (default `Demo@1234`).
+
+| Role      | Email | Password |
+| --------- | ----- | -------- |
+| Admin     | `admin@guild.app` | `ADMIN_SEED_PASSWORD` in `.env` (default `Admin@1234`; re-synced on `npm run db:seed` unless `ADMIN_SEED_SYNC_PASSWORD=false`) |
+| Customer  | `emily@demo.guild.app` | `Demo@1234` |
+| Customer  | `james@demo.guild.app` | `Demo@1234` |
+| Provider  | `marcus.reed@guild.app` (electrician, New York) | `Demo@1234` |
+| Provider  | `farhan.cooling@guild.app` (AC, Dubai) | `Demo@1234` |
+| Provider  | `sparklehome@guild.app` (cleaning, London) | `Demo@1234` |
+| Provider  | `dave.lane@guild.app` (plumbing, Toronto) | `Demo@1234` |
+| Provider  | `oakline@guild.app` (carpentry, Berlin) | `Demo@1234` |
+| Provider  | `arcticpro@guild.app` (HVAC, Singapore) | `Demo@1234` |
+| Provider  | `lumina.studio@guild.app` (photography, Sydney) | `Demo@1234` |
+| Provider  | `cornerstone.works@guild.app` (renovation, Mumbai) | `Demo@1234` |
+
+Professionals are created by the database seed (not via public sign-up). New accounts from **Register** are customers; they can book any listed provider.
+
+### Demo walkthrough
+
+1. Point MongoDB at the `guild` database (`DB_NAME=guild` and/or `MONGODB_URI` ending in `/guild`).
+2. Run `npm run db:seed` (or rely on `AUTO_SEED=true` on first boot).
+3. **Customer:** sign in as `emily@demo.guild.app` → **Dashboard** for sample appointments (`BK-SEED-DEMO-*`) → **Messages** for chats (AC confirmed, electrical thank-you, renovation quote thread).
+4. **Provider:** sign in as `farhan.cooling@guild.app` → **Provider studio** for requests → **Messages** for the same AC conversation.
+5. Book another service from **Find professionals** to create a new live appointment (separate from seed data).
+
+Demo bookings use fixed numbers like `BK-SEED-DEMO-CONFIRMED-AC`; re-running `npm run db:seed` is safe and does not remove real user bookings.
 
 ## What's inside
 
@@ -96,7 +117,7 @@ public/images/demo/      seeded demo portfolio/service images
 
 See `.env.example` — every variable is documented there. Highlights:
 
-- `MONGODB_URI` / `DB_NAME` — Mongo connection (replica set recommended).
+- `MONGODB_URI` / `DB_NAME` — Mongo connection (replica set recommended). If the URI has no database path (common on Atlas), set `DB_NAME=guild` so Mongoose and Better Auth use the same database.
 - `BETTER_AUTH_SECRET` — session signing key (`openssl rand -hex 32`).
 - `PUSHER_APP_ID` / `PUSHER_KEY` / `PUSHER_SECRET` / `PUSHER_CLUSTER` (server) and
   `NEXT_PUBLIC_PUSHER_KEY` / `NEXT_PUBLIC_PUSHER_CLUSTER` (browser, inlined at build
@@ -117,4 +138,4 @@ See `.env.example` — every variable is documented there. Highlights:
   env vars (server-side only; no browser keys needed).
 - **Port 3000 already in use after a rebuild** → the standalone server renames
   its process to `next-server`, so kill it by PID or `pkill -f next-server`.
-- **Seed skipped** → database not empty; drop it or set `AUTO_SEED=false`.
+- **Seed skipped** → marketplace data already present, or set `AUTO_SEED=false`. On Vercel, production auto-seeds missing categories/providers even when real users exist; run `npm run db:seed` locally against Atlas to populate immediately.

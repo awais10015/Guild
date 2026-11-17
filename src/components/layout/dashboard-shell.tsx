@@ -44,6 +44,14 @@ export interface NavItem {
   badge?: number;
 }
 
+const SECTION_ROOTS = new Set(["/provider", "/dashboard", "/admin"]);
+
+/** Section overviews are exact-match only; nested routes match their own href. */
+function isNavActive(pathname: string, href: string): boolean {
+  if (SECTION_ROOTS.has(href)) return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function NavLinks({
   nav,
   pathname,
@@ -56,7 +64,7 @@ function NavLinks({
   return (
     <nav className="flex flex-col gap-1">
       {nav.map((item) => {
-        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active = isNavActive(pathname, item.href);
         const Icon = NAV_ICONS[item.icon];
         return (
           <Link
@@ -99,17 +107,19 @@ export function DashboardShell({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)]">
-      <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 border-r bg-sidebar p-4 lg:block">
-        <div className="mb-4 px-2">
-          <h2 className="font-semibold">{title}</h2>
-          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+    <div className="flex min-h-[calc(100dvh-4rem)] w-full bg-background">
+      <aside className="hidden w-64 shrink-0 border-r bg-sidebar lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col">
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+          <div className="px-2">
+            <h2 className="font-semibold">{title}</h2>
+            {subtitle && <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p>}
+          </div>
+          <NavLinks nav={nav} pathname={pathname} />
         </div>
-        <NavLinks nav={nav} pathname={pathname} />
       </aside>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-3 border-b px-4 py-3 lg:hidden">
+      <div className="flex min-h-[calc(100dvh-4rem)] min-w-0 flex-1 flex-col bg-background">
+        <div className="flex items-center gap-3 border-b bg-background px-4 py-3 lg:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" aria-label="Open navigation">
@@ -125,7 +135,9 @@ export function DashboardShell({
           </Sheet>
           <span className="font-semibold">{title}</span>
         </div>
-        <main className="mx-auto max-w-6xl p-4 sm:p-6">{children}</main>
+        <main className="w-full flex-1 bg-background p-4 sm:p-6 lg:px-8 lg:py-8">
+          <div className="mx-auto w-full max-w-5xl lg:max-w-6xl">{children}</div>
+        </main>
       </div>
     </div>
   );

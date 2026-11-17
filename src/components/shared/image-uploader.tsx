@@ -23,6 +23,8 @@ interface Props {
   aspect?: "square" | "video";
   /* "grid": photo tiles + button (forms); "button": single trigger only (chat composer) */
   mode?: "grid" | "button";
+  /** Local blob preview while a file is uploading (e.g. chat composer). */
+  onUploadingChange?: (state: { uploading: boolean; previewUrl: string | null }) => void;
 }
 
 interface SignResponse {
@@ -58,9 +60,28 @@ async function uploadFile(file: File, kind: string): Promise<UploadedImage> {
   return { url: data.secure_url, publicId: data.public_id };
 }
 
-export function ImageUploader({ kind, images, onChange, max = 8, label = "Add photos", className, aspect = "video", mode = "grid" }: Props) {
+export function ImageUploader({
+  kind,
+  images,
+  onChange,
+  max = 8,
+  label = "Add photos",
+  className,
+  aspect = "video",
+  mode = "grid",
+  onUploadingChange,
+}: Props) {
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
+
+  function clearPreview() {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    onUploadingChange?.({ uploading: false, previewUrl: null });
+  }
 
   async function handleFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -81,13 +102,22 @@ export function ImageUploader({ kind, images, onChange, max = 8, label = "Add ph
         if (file.size > UPLOAD_MAX_BYTES) {
           throw new Error(`${file.name} is too large (max ${Math.round(UPLOAD_MAX_BYTES / 1_000_000)} MB).`);
         }
-        uploaded.push(await uploadFile(file, kind));
+        clearPreview();
+        const localPreview = URL.createObjectURL(file);
+        previewUrlRef.current = localPreview;
+        onUploadingChange?.({ uploading: true, previewUrl: localPreview });
+        try {
+          uploaded.push(await uploadFile(file, kind));
+        } finally {
+          clearPreview();
+        }
       }
       if (uploaded.length > 0) {
         onChange([...images, ...uploaded]);
         toast.success(`${uploaded.length} image${uploaded.length > 1 ? "s" : ""} added.`);
       }
     } catch (err) {
+      clearPreview();
       toast.error(err instanceof Error ? err.message : "Upload failed. Please try again.");
     } finally {
       setBusy(false);
@@ -142,10 +172,19 @@ export function ImageUploader({ kind, images, onChange, max = 8, label = "Add ph
         hidden
         onChange={(e) => handleFiles(e.target.files)}
       />
-      <Button type="button" variant="outline" size="sm" className={cn(mode === "grid" && "mt-3")} onClick={() => inputRef.current?.click()} disabled={busy}>
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-        {label}
-      </Button>
+      {(mode === "grid" || images.length < max) && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={cn(mode === "grid" && "mt-3")}
+          onClick={() => inputRef.current?.click()}
+          disabled={busy}
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+          {label}
+        </Button>
+      )}
     </div>
   );
 }

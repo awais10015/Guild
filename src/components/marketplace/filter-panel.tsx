@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { uniqueSortedCities } from "@/lib/text";
 import { SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ export function FilterPanel({ taxonomy, cities }: { taxonomy: TaxonomyData[]; ci
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const cityList = useMemo(() => uniqueSortedCities(cities), [cities]);
 
   function setParam(key: string, value?: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -76,7 +78,7 @@ export function FilterPanel({ taxonomy, cities }: { taxonomy: TaxonomyData[]; ci
           <SelectTrigger className="mt-1.5 w-full"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="any">All cities</SelectItem>
-            {cities.map((c) => (
+            {cityList.map((c) => (
               <SelectItem key={c} value={c}>{c}</SelectItem>
             ))}
           </SelectContent>

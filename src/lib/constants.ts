@@ -1,5 +1,7 @@
 /* Guild — shared constants, enums and state machines (server + client safe) */
 
+import { WORLD_COUNTRIES } from "@/lib/world-countries";
+
 export const APP_NAME = "Guild";
 export const APP_TAGLINE = "Skilled professionals, on demand — worldwide";
 export const CURRENCY = "USD";
@@ -129,19 +131,100 @@ export interface CityInfo {
   lng: number;
 }
 
-/** Global launch cities — a representative spread across continents */
+/** Curated cities for selectors (country → city). Expand here as needed. */
 export const GLOBAL_CITIES: CityInfo[] = [
-  { name: "New York", country: "United States", lat: 40.7128, lng: -74.006 },
-  { name: "London", country: "United Kingdom", lat: 51.5074, lng: -0.1278 },
-  { name: "Toronto", country: "Canada", lat: 43.6532, lng: -79.3832 },
+  /* Pakistan */
+  { name: "Karachi", country: "Pakistan", lat: 24.8607, lng: 67.0011 },
+  { name: "Lahore", country: "Pakistan", lat: 31.5204, lng: 74.3587 },
+  { name: "Islamabad", country: "Pakistan", lat: 33.6844, lng: 73.0479 },
+  { name: "Rawalpindi", country: "Pakistan", lat: 33.5651, lng: 73.0169 },
+  { name: "Faisalabad", country: "Pakistan", lat: 31.4504, lng: 73.135 },
+  { name: "Multan", country: "Pakistan", lat: 30.1575, lng: 71.5249 },
+  { name: "Peshawar", country: "Pakistan", lat: 34.0151, lng: 71.5249 },
+  { name: "Quetta", country: "Pakistan", lat: 30.1798, lng: 66.975 },
+  /* United Arab Emirates */
   { name: "Dubai", country: "United Arab Emirates", lat: 25.2048, lng: 55.2708 },
+  { name: "Abu Dhabi", country: "United Arab Emirates", lat: 24.4539, lng: 54.3773 },
+  { name: "Sharjah", country: "United Arab Emirates", lat: 25.3463, lng: 55.4209 },
+  /* Saudi Arabia */
+  { name: "Riyadh", country: "Saudi Arabia", lat: 24.7136, lng: 46.6753 },
+  { name: "Jeddah", country: "Saudi Arabia", lat: 21.4858, lng: 39.1925 },
+  /* United Kingdom */
+  { name: "London", country: "United Kingdom", lat: 51.5074, lng: -0.1278 },
+  { name: "Manchester", country: "United Kingdom", lat: 53.4808, lng: -2.2426 },
+  { name: "Birmingham", country: "United Kingdom", lat: 52.4862, lng: -1.8904 },
+  { name: "Edinburgh", country: "United Kingdom", lat: 55.9533, lng: -3.1883 },
+  /* United States */
+  { name: "New York", country: "United States", lat: 40.7128, lng: -74.006 },
+  { name: "Los Angeles", country: "United States", lat: 34.0522, lng: -118.2437 },
+  { name: "Chicago", country: "United States", lat: 41.8781, lng: -87.6298 },
+  { name: "Houston", country: "United States", lat: 29.7604, lng: -95.3698 },
+  { name: "San Francisco", country: "United States", lat: 37.7749, lng: -122.4194 },
+  { name: "Miami", country: "United States", lat: 25.7617, lng: -80.1918 },
+  { name: "Seattle", country: "United States", lat: 47.6062, lng: -122.3321 },
+  { name: "Dallas", country: "United States", lat: 32.7767, lng: -96.797 },
+  /* Canada */
+  { name: "Toronto", country: "Canada", lat: 43.6532, lng: -79.3832 },
+  { name: "Vancouver", country: "Canada", lat: 49.2827, lng: -123.1207 },
+  { name: "Montreal", country: "Canada", lat: 45.5017, lng: -73.5673 },
+  /* Germany */
   { name: "Berlin", country: "Germany", lat: 52.52, lng: 13.405 },
+  { name: "Munich", country: "Germany", lat: 48.1351, lng: 11.582 },
+  { name: "Frankfurt", country: "Germany", lat: 50.1109, lng: 8.6821 },
+  /* India */
   { name: "Mumbai", country: "India", lat: 19.076, lng: 72.8777 },
-  { name: "Singapore", country: "Singapore", lat: 1.3521, lng: 103.8198 },
+  { name: "Delhi", country: "India", lat: 28.6139, lng: 77.209 },
+  { name: "Bangalore", country: "India", lat: 12.9716, lng: 77.5946 },
+  { name: "Hyderabad", country: "India", lat: 17.385, lng: 78.4867 },
+  /* Australia */
   { name: "Sydney", country: "Australia", lat: -33.8688, lng: 151.2093 },
+  { name: "Melbourne", country: "Australia", lat: -37.8136, lng: 144.9631 },
+  { name: "Brisbane", country: "Australia", lat: -27.4698, lng: 153.0251 },
+  /* Singapore */
+  { name: "Singapore", country: "Singapore", lat: 1.3521, lng: 103.8198 },
+  /* Kenya */
   { name: "Nairobi", country: "Kenya", lat: -1.2921, lng: 36.8219 },
+  /* Mexico */
   { name: "Mexico City", country: "Mexico", lat: 19.4326, lng: -99.1332 },
+  /* France */
+  { name: "Paris", country: "France", lat: 48.8566, lng: 2.3522 },
+  /* Spain */
+  { name: "Madrid", country: "Spain", lat: 40.4168, lng: -3.7038 },
+  { name: "Barcelona", country: "Spain", lat: 41.3851, lng: 2.1734 },
+  /* South Africa */
+  { name: "Johannesburg", country: "South Africa", lat: -26.2041, lng: 28.0473 },
+  { name: "Cape Town", country: "South Africa", lat: -33.9249, lng: 18.4241 },
+  /* Turkey */
+  { name: "Istanbul", country: "Turkey", lat: 41.0082, lng: 28.9784 },
+  { name: "Ankara", country: "Turkey", lat: 39.9334, lng: 32.8597 },
+  /* Bangladesh */
+  { name: "Dhaka", country: "Bangladesh", lat: 23.8103, lng: 90.4125 },
+  /* Egypt */
+  { name: "Cairo", country: "Egypt", lat: 30.0444, lng: 31.2357 },
 ];
+
+export const CUSTOM_CITY_SELECT_VALUE = "__custom_city__";
+
+/** All countries in the location dropdown (cities remain curated per country). */
+export const GLOBAL_COUNTRIES: string[] = [...WORLD_COUNTRIES];
+
+export function citiesForCountry(country: string): CityInfo[] {
+  return GLOBAL_CITIES.filter((c) => c.country === country).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function findCityInfo(city: string, country?: string): CityInfo | undefined {
+  const norm = city.trim().toLowerCase();
+  const pool = country ? citiesForCountry(country) : GLOBAL_CITIES;
+  return pool.find((c) => c.name.toLowerCase() === norm);
+}
+
+export function countryForCity(city: string): string | undefined {
+  return findCityInfo(city)?.country;
+}
+
+export function defaultCountryForCity(city: string, fallback = GLOBAL_COUNTRIES[0] ?? ""): string {
+  return countryForCity(city) ?? fallback;
+}
 
 export const TIME_SLOTS = [
   "08:00 – 11:00",

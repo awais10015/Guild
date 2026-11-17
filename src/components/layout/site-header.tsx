@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import { RealtimeBridge } from "@/components/shared/realtime-bridge";
@@ -43,11 +43,29 @@ function roleHome(role?: string) {
   return "/dashboard";
 }
 
+function isMarketingPath(pathname: string) {
+  return (
+    pathname === "/" ||
+    pathname.startsWith("/professionals") ||
+    pathname.startsWith("/categories") ||
+    pathname.startsWith("/services") ||
+    pathname.startsWith("/how-it-works") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register")
+  );
+}
+
+/** Compact studio header when signed in outside public marketing pages. */
+function useCompactHeader(pathname: string, signedIn: boolean) {
+  return signedIn && !isMarketingPath(pathname);
+}
+
 export function SiteHeader() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const s = (session ?? null) as SessionData;
+  const compact = useCompactHeader(pathname, !!s?.user);
 
   const links = [
     { href: "/professionals", label: "Find professionals" },
@@ -55,32 +73,56 @@ export function SiteHeader() {
     { href: "/how-it-works", label: "How it works" },
   ];
 
+  const homeHref = s?.user && compact ? roleHome(s.user.role) : "/";
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/85 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b bg-background">
       <RealtimeBridge />
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2.5">
+      <div
+        className={cn(
+          "flex h-16 w-full items-center gap-3 px-4 sm:gap-4 sm:px-6",
+          compact ? "lg:px-8" : "mx-auto max-w-7xl",
+        )}
+      >
+        <Link href={homeHref} className="flex shrink-0 items-center gap-2.5">
           { }
           <img src="/logo.svg" alt="Guild" className="h-9 w-9" />
           <span className="text-lg font-bold tracking-tight">Guild</span>
         </Link>
 
-        <nav className="ml-4 hidden items-center gap-1 md:flex">
-          {links.map((l) => (
+        {compact ? (
+          <div className="hidden items-center gap-4 sm:flex">
             <Link
-              key={l.href}
-              href={l.href}
-              className={cn(
-                "rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground",
-                pathname.startsWith(l.href) && "bg-muted text-foreground",
-              )}
+              href="/professionals"
+              className="text-sm text-muted-foreground transition hover:text-foreground"
             >
-              {l.label}
+              Browse marketplace
             </Link>
-          ))}
-        </nav>
+            <Link
+              href={roleHome(s.user!.role)}
+              className="text-sm text-muted-foreground transition hover:text-foreground"
+            >
+              {s!.user!.role === "provider" ? "Studio" : s!.user!.role === "admin" ? "Admin" : "Dashboard"}
+            </Link>
+          </div>
+        ) : (
+          <nav className="ml-2 hidden items-center gap-1 md:flex">
+            {links.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground",
+                  pathname.startsWith(l.href) && "bg-muted text-foreground",
+                )}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+        )}
 
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
           <ThemeToggle />
           {s?.user ? (
             <>
@@ -122,7 +164,15 @@ export function SiteHeader() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings">
+                    <Link
+                      href={
+                        s.user.role === "provider"
+                          ? "/provider/profile"
+                          : s.user.role === "admin"
+                            ? "/admin"
+                            : "/dashboard/settings"
+                      }
+                    >
                       <Settings className="h-4 w-4" /> Settings
                     </Link>
                   </DropdownMenuItem>

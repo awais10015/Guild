@@ -93,15 +93,28 @@ export async function adminStats() {
     { $sort: { _id: 1 } },
   ]);
 
-  const topCategories = await Service.aggregate<{ _id: unknown; count: number; name: string | null }>([
+  const topCategoriesRaw = await Service.aggregate<{ name: string | null; count: number }>([
     { $group: { _id: "$categoryId", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
     { $limit: 6 },
     {
       $lookup: { from: "categories", localField: "_id", foreignField: "_id", as: "cat" },
     },
-    { $project: { count: 1, name: { $first: "$cat.name" } } },
+    { $project: { _id: 0, count: 1, name: { $first: "$cat.name" } } },
   ]);
+  const topCategories = topCategoriesRaw.map((row) => ({
+    name: row.name ?? null,
+    count: row.count,
+  }));
+
+  const bookingsByStatusPlain = bookingsByStatus.map((row) => ({
+    _id: String(row._id),
+    count: row.count,
+  }));
+  const bookingsPerDayPlain = bookingsPerDay.map((row) => ({
+    _id: String(row._id),
+    count: row.count,
+  }));
 
   return {
     users,
@@ -113,8 +126,8 @@ export async function adminStats() {
     reports,
     openReports,
     services,
-    bookingsByStatus,
-    bookingsPerDay,
+    bookingsByStatus: bookingsByStatusPlain,
+    bookingsPerDay: bookingsPerDayPlain,
     topCategories,
   };
 }

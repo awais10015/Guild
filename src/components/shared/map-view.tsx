@@ -16,6 +16,7 @@ export interface MapMarker {
   lng: number;
   label?: string;
   radiusKm?: number;
+  active?: boolean;
 }
 
 export function MapView({

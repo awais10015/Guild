@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { uniqueSortedCities } from "@/lib/text";
 import { Search, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,6 +29,7 @@ export function SearchBar({
   const searchParams = useSearchParams();
   const [q, setQ] = useState(initialQuery);
   const [city, setCity] = useState(initialCity || searchParams.get("city") || "");
+  const cityList = useMemo(() => uniqueSortedCities(cities), [cities]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -63,7 +65,7 @@ export function SearchBar({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="any">All cities</SelectItem>
-            {cities.map((c) => (
+            {cityList.map((c) => (
               <SelectItem key={c} value={c}>
                 {c}
               </SelectItem>

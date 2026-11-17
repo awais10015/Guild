@@ -21,6 +21,7 @@ import {
 import { ImageUploader, type UploadedImage } from "@/components/shared/image-uploader";
 import { PRICING_MODELS, PRICING_MODEL_LABELS, type PricingModel } from "@/lib/constants";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export interface ServiceFormValue {
   title: string;
@@ -30,6 +31,25 @@ export interface ServiceFormValue {
   price: string;
   durationHours: string;
   isActive: boolean;
+}
+
+function validateServiceForm(value: ServiceFormValue, needsPrice: boolean): string[] {
+  const errors: string[] = [];
+  const titleLen = value.title.trim().length;
+  if (titleLen < 5) errors.push(`Title: at least 5 characters (${titleLen}/5).`);
+  const descLen = value.description.trim().length;
+  if (descLen < 30) errors.push(`Description: at least 30 characters (${descLen}/30).`);
+  if (!value.professionId) errors.push("Select a profession.");
+  if (needsPrice && (Number.isNaN(Number(value.price)) || Number(value.price) < 1)) {
+    errors.push("Enter a price of at least $1.");
+  }
+  if (value.durationHours.trim() !== "") {
+    const d = Number(value.durationHours);
+    if (Number.isNaN(d) || d < 0.5 || d > 24) {
+      errors.push("Duration must be between 0.5 and 24 hours, or leave it blank.");
+    }
+  }
+  return errors;
 }
 
 export function ServiceForm({
@@ -50,13 +70,17 @@ export function ServiceForm({
     setValue((prev) => ({ ...prev, [key]: v }));
 
   const needsPrice = value.pricingModel !== "custom";
-  const canSave =
-    value.title.trim().length >= 5 &&
-    value.description.trim().length >= 30 &&
-    value.professionId &&
-    (!needsPrice || Number(value.price) >= 1);
+  const validationErrors = validateServiceForm(value, needsPrice);
+  const canSave = validationErrors.length === 0;
+  const titleLen = value.title.trim().length;
+  const descLen = value.description.trim().length;
 
   async function save() {
+    const errors = validateServiceForm(value, needsPrice);
+    if (errors.length > 0) {
+      toast.error(errors[0]);
+      return;
+    }
     setBusy(true);
     try {
       const payload = {
@@ -65,7 +89,7 @@ export function ServiceForm({
         professionId: value.professionId,
         pricingModel: value.pricingModel,
         price: needsPrice ? Math.round(Number(value.price)) : null,
-        durationHours: value.durationHours ? Number(value.durationHours) : null,
+        durationHours: value.durationHours.trim() ? Number(value.durationHours) : null,
         images,
         isActive: value.isActive,
       };
@@ -114,10 +138,16 @@ export function ServiceForm({
           <div>
             <Label>Title *</Label>
             <Input value={value.title} onChange={(e) => set("title", e.target.value)} className="mt-1.5" placeholder="e.g. Split AC installation with gas charging" />
+            <p className={cn("mt-1 text-xs", titleLen >= 5 ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400")}>
+              {titleLen}/5 characters minimum
+            </p>
           </div>
           <div>
-            <Label>Description * <span className="text-xs font-normal text-muted-foreground">(min 30 chars — what's included, what's extra)</span></Label>
+            <Label>Description * <span className="text-xs font-normal text-muted-foreground">(what&apos;s included, what&apos;s extra)</span></Label>
             <Textarea value={value.description} onChange={(e) => set("description", e.target.value)} rows={6} className="mt-1.5" />
+            <p className={cn("mt-1 text-xs", descLen >= 30 ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400")}>
+              {descLen}/30 characters minimum
+            </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -160,7 +190,17 @@ export function ServiceForm({
             )}
             <div>
               <Label>Estimated duration (hours)</Label>
-              <Input type="number" min={0.5} step={0.5} value={value.durationHours} onChange={(e) => set("durationHours", e.target.value)} className="mt-1.5" placeholder="e.g. 3" />
+              <Input
+                type="number"
+                min={0.5}
+                max={24}
+                step={0.5}
+                value={value.durationHours}
+                onChange={(e) => set("durationHours", e.target.value)}
+                className="mt-1.5"
+                placeholder="e.g. 3"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">Optional. Between 0.5 and 24 hours per visit.</p>
             </div>
           </div>
           <div className="flex items-center justify-between rounded-lg border p-3.5">
@@ -183,7 +223,7 @@ export function ServiceForm({
         </CardContent>
       </Card>
 
-      <div className="flex justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         {serviceId ? (
           <Button variant="outline" onClick={remove} disabled={busy}>
             <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -191,10 +231,19 @@ export function ServiceForm({
         ) : (
           <span />
         )}
-        <Button size="lg" onClick={save} disabled={busy || !canSave}>
-          {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {serviceId ? "Save changes" : "Publish service"}
-        </Button>
+        <div className="flex flex-col items-end gap-2">
+          {!canSave && validationErrors.length > 0 && (
+            <ul className="max-w-md text-right text-xs text-muted-foreground">
+              {validationErrors.map((msg) => (
+                <li key={msg}>{msg}</li>
+              ))}
+            </ul>
+          )}
+          <Button size="lg" onClick={() => void save()} disabled={busy} variant={canSave ? "default" : "secondary"}>
+            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {serviceId ? "Save changes" : "Publish service"}
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { Profession, Category, ProviderProfile, Service, type ProviderProfileDoc } from "@/models";
-import { escapeRegExp } from "@/lib/text";
+import { escapeRegExp, uniqueSortedCities } from "@/lib/text";
 import { PAGE_SIZE } from "@/lib/constants";
 import { cityCenter } from "@/lib/geo";
 import type * as S from "@/lib/validations";
@@ -257,12 +257,34 @@ export async function searchProviders(params: SearchParams): Promise<SearchResul
 export async function citiesWithProviders(): Promise<string[]> {
   const rows = await ProviderProfile.aggregate([
     { $match: { isSuspended: false } },
-    { $project: { cities: ["$location.city", { $map: { input: "$serviceAreas", as: "a", in: "$$a.city" } }] } },
+    {
+      $project: {
+        cities: {
+          $setUnion: [
+            {
+              $cond: {
+                if: { $and: [{ $ne: ["$location.city", null] }, { $ne: ["$location.city", ""] }] },
+                then: ["$location.city"],
+                else: [],
+              },
+            },
+            {
+              $filter: {
+                input: { $map: { input: { $ifNull: ["$serviceAreas", []] }, as: "a", in: "$$a.city" } },
+                as: "city",
+                cond: { $and: [{ $ne: ["$$city", null] }, { $ne: ["$$city", ""] }] },
+              },
+            },
+          ],
+        },
+      },
+    },
     { $unwind: "$cities" },
     { $group: { _id: "$cities" } },
     { $sort: { _id: 1 } },
   ]);
-  return rows.map((r) => r._id).filter(Boolean);
+  const names = rows.map((r) => (typeof r._id === "string" ? r._id : "")).filter(Boolean);
+  return uniqueSortedCities(names);
 }
 
 /** Featured providers for the homepage */

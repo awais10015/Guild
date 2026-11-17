@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Loader2, Send, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ export function MessagesView({ currentUserId }: { currentUserId: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [attachment, setAttachment] = useState<UploadedImage[]>([]);
+  const [uploadingImage, setUploadingImage] = useState<{ previewUrl: string | null } | null>(null);
   const [typing, setTyping] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -340,10 +341,53 @@ export function MessagesView({ currentUserId }: { currentUserId: string }) {
               <div ref={bottomRef} />
             </div>
 
-            {attachment.length > 0 && (
-              <div className="border-t px-4 py-2 text-xs text-muted-foreground">
-                Image attached — send to deliver.{" "}
-                <button className="underline" onClick={() => setAttachment([])}>remove</button>
+            {(attachment.length > 0 || uploadingImage) && (
+              <div className="flex items-center gap-3 border-t bg-muted/30 px-4 py-3">
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border bg-muted">
+                  {(() => {
+                    const preview =
+                      attachment[0]?.url ?? uploadingImage?.previewUrl ?? null;
+                    if (!preview) {
+                      return (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                      );
+                    }
+                    if (preview.startsWith("blob:")) {
+                      return (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={preview} alt="" className="h-full w-full object-cover" />
+                      );
+                    }
+                    return <Image src={preview} alt="Attachment preview" fill className="object-cover" sizes="80px" />;
+                  })()}
+                  {uploadingImage && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                      <Loader2 className="h-6 w-6 animate-spin text-white" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1 text-sm">
+                  <p className="font-medium">
+                    {uploadingImage ? "Uploading image…" : "Image ready to send"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {uploadingImage ? "Hang on a moment" : "Add a caption below or tap send"}
+                  </p>
+                </div>
+                {!uploadingImage && attachment.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                    aria-label="Remove attachment"
+                    onClick={() => setAttachment([])}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             )}
 
@@ -352,6 +396,9 @@ export function MessagesView({ currentUserId }: { currentUserId: string }) {
                 kind="chat"
                 images={attachment}
                 onChange={(imgs) => setAttachment(imgs.slice(-1))}
+                onUploadingChange={(state) =>
+                  setUploadingImage(state.uploading ? { previewUrl: state.previewUrl } : null)
+                }
                 max={1}
                 label="Attach"
                 aspect="square"

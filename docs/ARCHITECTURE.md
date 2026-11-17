@@ -277,7 +277,7 @@ Dev: typescript ^5, tailwindcss ^4, eslint ^9, tsx (seed scripts), vitest (optio
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `MAIL_FROM` | Email channel (dev falls back to console) |
 | `SOCKET_PORT` | Socket.IO service port (3003 in sandbox) |
 | `NEXT_PUBLIC_SOCKET_PATH` | Relative socket path incl. gateway param when applicable |
-| `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD` | One-time admin bootstrap (seed script only) |
+| `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD` / `ADMIN_SEED_SYNC_PASSWORD` | Admin bootstrap on every seed (sync password unless `ADMIN_SEED_SYNC_PASSWORD=false`) |
 
 Secrets live only in `.env` (gitignored); `.env.example` documents every key. No secret is ever imported into client components (enforced by `NEXT_PUBLIC_` discipline).
 

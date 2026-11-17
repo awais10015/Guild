@@ -199,6 +199,33 @@ export async function createProfession(input: { categoryId: string; name: string
   return Profession.create({ ...input, slug, isActive: input.isActive ?? true });
 }
 
+/** Used by providers when their trade is not in the catalog — reuses existing slug when present. */
+export async function findOrCreateProfession(input: { categoryId: string; name: string }) {
+  const category = await Category.findById(input.categoryId).select("isActive").lean();
+  if (!category?.isActive) throw new ApiError(422, "Choose a valid category.");
+
+  const trimmed = input.name.trim();
+  const slug = slugify(trimmed);
+  const existing = await Profession.findOne({ slug }).lean();
+  if (existing) {
+    return { profession: existing, created: false as const };
+  }
+
+  const keywords = trimmed
+    .toLowerCase()
+    .split(/[\s,/]+/)
+    .map((w) => w.replace(/[^a-z0-9-]/g, ""))
+    .filter((w) => w.length > 2);
+  const profession = await Profession.create({
+    categoryId: input.categoryId,
+    name: trimmed,
+    slug,
+    keywords: keywords.length ? keywords : [slug.replace(/-/g, " ")],
+    isActive: true,
+  });
+  return { profession, created: true as const };
+}
+
 export async function updateProfession(id: string, input: Partial<{ name: string; keywords: string[]; isActive: boolean; categoryId: string }>) {
   const patch: Record<string, unknown> = { ...input };
   if (input.name) patch.slug = slugify(input.name);

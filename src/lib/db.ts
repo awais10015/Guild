@@ -1,17 +1,16 @@
 import mongoose, { type Mongoose } from "mongoose";
-
-const DEFAULT_URI =
-  "mongodb://127.0.0.1:27017/guild?replicaSet=rs0&directConnection=true";
+import { mongoDbName, mongoUri } from "@/lib/mongodb";
 
 const globalForMongoose = globalThis as unknown as {
   mongoosePromise: Promise<Mongoose> | null;
 };
 
-async function tryConnect(uri: string): Promise<Mongoose> {
+async function tryConnect(uri: string, dbName: string): Promise<Mongoose> {
   const lastDelay = 2000;
   for (let attempt = 1; attempt <= 6; attempt++) {
     try {
       return await mongoose.connect(uri, {
+        dbName,
         serverSelectionTimeoutMS: 6000,
         maxPoolSize: 20,
       });
@@ -30,13 +29,17 @@ async function tryConnect(uri: string): Promise<Mongoose> {
  */
 export async function connectDB(): Promise<Mongoose> {
   if (!globalForMongoose.mongoosePromise) {
-    const uri = process.env.MONGODB_URI || DEFAULT_URI;
+    const uri = mongoUri();
+    const dbName = mongoDbName(uri);
     globalForMongoose.mongoosePromise = (async () => {
-      const mongoose = await tryConnect(uri);
+      const mongoose = await tryConnect(uri, dbName);
       // register models
       await import("@/models");
       // fire-and-forget auto seed (never blocks requests)
-      if (process.env.AUTO_SEED === "true") {
+      const autoSeed =
+        process.env.AUTO_SEED === "true" ||
+        (process.env.NODE_ENV === "production" && process.env.AUTO_SEED !== "false");
+      if (autoSeed) {
         void import("@/server/seed")
           .then((m) => m.ensureSeed())
           .catch((err) => console.error("[seed] failed:", err));

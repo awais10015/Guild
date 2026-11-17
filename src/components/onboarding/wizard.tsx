@@ -15,9 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSession, type SessionData } from "@/lib/auth-client";
-import { GLOBAL_CITIES } from "@/lib/constants";
+import { LocationCountryCitySelect } from "@/components/shared/location-country-city";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CustomProfessionAdd, type TaxonomyCategoryRow } from "@/components/provider/custom-profession-add";
 
 interface TaxonomyProfession {
   id: string;
@@ -34,19 +35,21 @@ export function OnboardingWizard() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const [role, setRole] = useState<"customer" | "provider" | null>(null);
-  const [taxonomy, setTaxonomy] = useState<TaxonomyCategory[]>([]);
+  const [taxonomy, setTaxonomy] = useState<TaxonomyCategoryRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState("");
 
   /* provider fields */
   const [title, setTitle] = useState("");
   const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
   const [professions, setProfessions] = useState<string[]>([]);
   const [bio, setBio] = useState("");
 
   /* customer fields */
+  const [cCountry, setCCountry] = useState("");
   const [cCity, setCCity] = useState("");
   const [cArea, setCArea] = useState("");
 
@@ -84,12 +87,13 @@ export function OnboardingWizard() {
     try {
       const body =
         role === "customer"
-          ? { role: "customer", phone, city: cCity, area: cArea }
+          ? { role: "customer", phone, country: cCountry || undefined, city: cCity, area: cArea }
           : {
               role: "provider",
               phone,
               professionalTitle: title,
               professions,
+              country: country || undefined,
               city,
               area,
               bio,
@@ -183,16 +187,15 @@ export function OnboardingWizard() {
           </div>
           {role === "provider" ? (
             <>
-              <div>
-                <Label>City *</Label>
-                <Select value={city} onValueChange={setCity}>
-                  <SelectTrigger className="mt-1.5 w-full"><SelectValue placeholder="Select city" /></SelectTrigger>
-                  <SelectContent>
-                    {GLOBAL_CITIES.map((c) => (
-                      <SelectItem key={c.name} value={c.name}>{c.name}, {c.country}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="sm:col-span-2">
+                <LocationCountryCitySelect
+                  required
+                  value={{ country, city }}
+                  onChange={(loc) => {
+                    setCountry(loc.country);
+                    setCity(loc.city);
+                  }}
+                />
               </div>
               <div className="sm:col-span-2">
                 <Label>Professional title *</Label>
@@ -206,16 +209,15 @@ export function OnboardingWizard() {
             </>
           ) : (
             <>
-              <div>
-                <Label>City *</Label>
-                <Select value={cCity} onValueChange={setCCity}>
-                  <SelectTrigger className="mt-1.5 w-full"><SelectValue placeholder="Select city" /></SelectTrigger>
-                  <SelectContent>
-                    {GLOBAL_CITIES.map((c) => (
-                      <SelectItem key={c.name} value={c.name}>{c.name}, {c.country}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="sm:col-span-2">
+                <LocationCountryCitySelect
+                  required
+                  value={{ country: cCountry, city: cCity }}
+                  onChange={(loc) => {
+                    setCCountry(loc.country);
+                    setCCity(loc.city);
+                  }}
+                />
               </div>
               <div className="sm:col-span-2">
                 <Label>Area / locality</Label>
@@ -270,6 +272,18 @@ export function OnboardingWizard() {
                 <p className="text-sm text-muted-foreground">No professions match your search.</p>
               )}
             </div>
+            <CustomProfessionAdd
+              className="mt-4 rounded-lg border bg-muted/20 p-3"
+              categories={taxonomy.map((c) => ({ id: c.id, name: c.name }))}
+              selectedIds={professions}
+              max={5}
+              taxonomy={taxonomy}
+              onTaxonomyUpdated={setTaxonomy}
+              onAdd={(id) => {
+                if (professions.includes(id) || professions.length >= 5) return;
+                setProfessions([...professions, id]);
+              }}
+            />
             <div>
               <Label className="mt-4">Short introduction</Label>
               <textarea

@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/db";
 import { Category, Profession, ProviderProfile } from "@/models";
 import { ProviderProfileForm, type ProfileFormValue } from "@/components/provider/profile-form";
 import { cityCenter } from "@/lib/geo";
-import type { DayKey } from "@/lib/constants";
+import { defaultCountryForCity, type DayKey } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +37,10 @@ export default async function ProviderProfilePage() {
     languages: ((profile?.languages ?? []) as string[]).length ? (profile?.languages as string[]) : ["English"],
     phone: (profile?.phone as string) ?? (session.user.phone ?? ""),
     whatsapp: (profile?.whatsapp as string) ?? "",
-    country: (profile?.location?.country as string) ?? "",
+    country:
+      (profile?.location?.country as string) ||
+      defaultCountryForCity((profile?.location?.city as string) ?? "") ||
+      "",
     city: (profile?.location?.city as string) ?? "",
     area: (profile?.location?.area as string) ?? "",
     lat: profile?.location?.coordinates?.coordinates?.[1] ?? center.lat,

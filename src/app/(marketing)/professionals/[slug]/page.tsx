@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RatingStars, VerifiedBadge, AvailabilityDot, PriceTag } from "@/components/shared/badges";
 import { BookingDialog } from "@/components/booking/booking-dialog";
+import { StartConversationButton } from "@/components/messaging/start-conversation-button";
 import { FavoriteButton } from "@/components/marketplace/favorite-button";
 import { ReportDialog } from "@/components/shared/report-dialog";
 import { ReviewDialog } from "@/components/shared/review-dialog";
@@ -272,23 +273,7 @@ export default async function ProviderProfilePage({ params }: Props) {
                   </details>
                 )}
                 {session?.user ? (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={async () => {
-                      const res = await fetch("/api/conversations", {
-                        method: "POST",
-                        headers: { "content-type": "application/json" },
-                        body: JSON.stringify({ userId }),
-                      });
-                      const json = await res.json();
-                      if (json.ok && json.data.conversationId) {
-                        window.location.href = `/messages?c=${json.data.conversationId}`;
-                      }
-                    }}
-                  >
-                    <MessageSquare className="h-4 w-4" /> Message
-                  </Button>
+                  <StartConversationButton userId={userId} />
                 ) : (
                   <Button variant="outline" className="w-full" asChild>
                     <Link href="/login"><MessageSquare className="h-4 w-4" /> Sign in to message</Link>

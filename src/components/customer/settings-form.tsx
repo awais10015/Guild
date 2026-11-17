@@ -10,18 +10,12 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
-import { GLOBAL_CITIES } from "@/lib/constants";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { defaultCountryForCity } from "@/lib/constants";
+import { LocationCountryCitySelect } from "@/components/shared/location-country-city";
 
 interface AccountData {
   user: { name: string; email: string; phone: string; role: string; emailVerified: boolean };
-  address: { label?: string; city?: string; area?: string; streetAddress?: string } | null;
+  address: { label?: string; country?: string; city?: string; area?: string; streetAddress?: string } | null;
 }
 
 export function SettingsForm() {
@@ -29,12 +23,20 @@ export function SettingsForm() {
   const [data, setData] = useState<AccountData | null>(null);
   const [busy, setBusy] = useState(false);
   const [pwBusy, setPwBusy] = useState(false);
+  const [addressCountry, setAddressCountry] = useState("");
+  const [addressCity, setAddressCity] = useState("");
 
   useEffect(() => {
     fetch("/api/account")
       .then((r) => r.json())
       .then((json) => {
-        if (json.ok) setData(json.data);
+        if (json.ok) {
+          setData(json.data);
+          const addr = json.data.address as AccountData["address"];
+          const city = addr?.city ?? "";
+          setAddressCity(city);
+          setAddressCountry(addr?.country || defaultCountryForCity(city) || "");
+        }
       });
   }, []);
 
@@ -51,7 +53,8 @@ export function SettingsForm() {
           phone: String(form.get("phone") ?? "") || undefined,
           address: {
             label: "Home",
-            city: String(form.get("city") ?? ""),
+            country: addressCountry,
+            city: addressCity,
             area: String(form.get("area") ?? ""),
             streetAddress: String(form.get("street") ?? ""),
           },
@@ -112,18 +115,14 @@ export function SettingsForm() {
                 <Input id="st-phone" name="phone" defaultValue={data.user.phone ?? ""} placeholder="03001234567" className="mt-1.5" />
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <Label htmlFor="st-city">City</Label>
-                <Select name="city" defaultValue={data.address?.city ?? ""}>
-                  <SelectTrigger className="mt-1.5 w-full"><SelectValue placeholder="Select city" /></SelectTrigger>
-                  <SelectContent>
-                    {GLOBAL_CITIES.map((c) => (
-                      <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <LocationCountryCitySelect
+              value={{ country: addressCountry, city: addressCity }}
+              onChange={(loc) => {
+                setAddressCountry(loc.country);
+                setAddressCity(loc.city);
+              }}
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="st-area">Area</Label>
                 <Input id="st-area" name="area" defaultValue={data.address?.area ?? ""} className="mt-1.5" />

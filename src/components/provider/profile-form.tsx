@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, Trash2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,19 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ImageUploader, type UploadedImage } from "@/components/shared/image-uploader";
 import { MapView } from "@/components/shared/map-view";
-import { GLOBAL_CITIES, DAY_KEYS, DAY_LABELS, LANGUAGES, type DayKey } from "@/lib/constants";
-import { cityCenter } from "@/lib/geo";
+import { defaultCountryForCity, DAY_KEYS, DAY_LABELS, LANGUAGES, type DayKey } from "@/lib/constants";
+import { LocationCountryCitySelect } from "@/components/shared/location-country-city";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CustomProfessionAdd, type TaxonomyCategoryRow } from "@/components/provider/custom-profession-add";
 
 export interface TaxonomyCategory {
   id: string;
@@ -75,25 +69,56 @@ export function ProviderProfileForm({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [value, setValue] = useState<ProfileFormValue>(initial);
+  const [taxonomyRows, setTaxonomyRows] = useState<TaxonomyCategoryRow[]>(() =>
+    taxonomy.map((c) => ({ id: c.id, name: c.name, professions: c.professions })),
+  );
+
+  useEffect(() => {
+    setTaxonomyRows(taxonomy.map((c) => ({ id: c.id, name: c.name, professions: c.professions })));
+  }, [taxonomy]);
   const [portfolioImages, setPortfolioImages] = useState<UploadedImage[]>(
     portfolio.map((p) => ({ url: p.url, publicId: p.publicId ?? null })),
   );
   const [certs, setCerts] = useState<CertificationItem[]>(
     certifications.length ? certifications : [],
   );
+  const [activeServiceAreaIndex, setActiveServiceAreaIndex] = useState(0);
 
   const set = <K extends keyof ProfileFormValue>(key: K, v: ProfileFormValue[K]) =>
     setValue((prev) => ({ ...prev, [key]: v }));
 
-  function onCityChange(city: string) {
-    const c = cityCenter(city);
-    setValue((prev) => ({
-      ...prev,
-      city,
-      country: GLOBAL_CITIES.find((x) => x.name === city)?.country ?? prev.country,
-      lat: c?.lat ?? prev.lat,
-      lng: c?.lng ?? prev.lng,
-    }));
+  useEffect(() => {
+    if (value.serviceAreas.length === 0) {
+      setValue((prev) => ({
+        ...prev,
+        serviceAreas: [{ name: "", city: prev.city, lat: prev.lat, lng: prev.lng, radiusKm: 10 }],
+      }));
+    } else if (activeServiceAreaIndex >= value.serviceAreas.length) {
+      setActiveServiceAreaIndex(0);
+    }
+  }, [value.serviceAreas.length, activeServiceAreaIndex]);
+
+  const mapCenter = useMemo(() => {
+    const area = value.serviceAreas[activeServiceAreaIndex];
+    if (area) return { lat: area.lat, lng: area.lng };
+    return { lat: value.lat, lng: value.lng };
+  }, [value.serviceAreas, activeServiceAreaIndex, value.lat, value.lng]);
+
+  function updateServiceAreaPin(lat: number, lng: number) {
+    setValue((prev) => {
+      const idx = Math.min(activeServiceAreaIndex, Math.max(0, prev.serviceAreas.length - 1));
+      if (prev.serviceAreas.length === 0) {
+        return { ...prev, lat, lng };
+      }
+      const serviceAreas = prev.serviceAreas.map((a, i) => (i === idx ? { ...a, lat, lng } : a));
+      const syncMain = idx === 0;
+      return {
+        ...prev,
+        lat: syncMain ? lat : prev.lat,
+        lng: syncMain ? lng : prev.lng,
+        serviceAreas,
+      };
+    });
   }
 
   async function save() {
@@ -221,7 +246,7 @@ export function ProviderProfileForm({
           <CardDescription>Pick up to 5 — these determine your search visibility.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {taxonomy.map((cat) => (
+          {taxonomyRows.map((cat) => (
             <div key={cat.id}>
               <p className="text-xs font-semibold text-muted-foreground">{cat.name}</p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -243,6 +268,18 @@ export function ProviderProfileForm({
               </div>
             </div>
           ))}
+          <CustomProfessionAdd
+            className="border-t pt-4"
+            categories={taxonomyRows.map((c) => ({ id: c.id, name: c.name }))}
+            selectedIds={value.professions}
+            max={5}
+            taxonomy={taxonomyRows}
+            onTaxonomyUpdated={setTaxonomyRows}
+            onAdd={(id) => {
+              if (value.professions.includes(id) || value.professions.length >= 5) return;
+              set("professions", [...value.professions, id]);
+            }}
+          />
         </CardContent>
       </Card>
 
@@ -255,22 +292,33 @@ export function ProviderProfileForm({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div>
-              <Label>City *</Label>
-              <Select value={value.city} onValueChange={onCityChange}>
-                <SelectTrigger className="mt-1.5 w-full"><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>
-                  {GLOBAL_CITIES.map((c) => (
-                    <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Area / locality</Label>
-              <Input value={value.area} onChange={(e) => set("area", e.target.value)} className="mt-1.5" placeholder="e.g. Gulberg III" />
-            </div>
+          <LocationCountryCitySelect
+            required
+            value={{ country: value.country, city: value.city }}
+            onChange={(loc, coords) =>
+              setValue((prev) => {
+                const lat = coords?.lat ?? prev.lat;
+                const lng = coords?.lng ?? prev.lng;
+                const serviceAreas =
+                  prev.serviceAreas.length > 0
+                    ? prev.serviceAreas.map((a, i) =>
+                        i === 0 ? { ...a, city: loc.city, lat, lng } : { ...a, city: loc.city },
+                      )
+                    : [{ name: "", city: loc.city, lat, lng, radiusKm: 10 }];
+                return {
+                  ...prev,
+                  country: loc.country,
+                  city: loc.city,
+                  lat,
+                  lng,
+                  serviceAreas,
+                };
+              })
+            }
+          />
+          <div>
+            <Label>Area / locality</Label>
+            <Input value={value.area} onChange={(e) => set("area", e.target.value)} className="mt-1.5" placeholder="e.g. Gulberg III" />
           </div>
 
           <div>
@@ -280,19 +328,40 @@ export function ProviderProfileForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  set("serviceAreas", [...value.serviceAreas, { name: "", city: value.city, lat: value.lat, lng: value.lng, radiusKm: 10 }])
-                }
+                onClick={() => {
+                  const nextIndex = value.serviceAreas.length;
+                  setValue((prev) => ({
+                    ...prev,
+                    serviceAreas: [
+                      ...prev.serviceAreas,
+                      { name: "", city: prev.city, lat: prev.lat, lng: prev.lng, radiusKm: 10 },
+                    ],
+                  }));
+                  setActiveServiceAreaIndex(nextIndex);
+                }}
               >
                 <Plus className="h-4 w-4" /> Add area
               </Button>
             </div>
             <div className="mt-2 space-y-2.5">
               {value.serviceAreas.map((area, i) => (
-                <div key={i} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[1fr_120px_110px_40px]">
+                <div
+                  key={i}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setActiveServiceAreaIndex(i)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") setActiveServiceAreaIndex(i);
+                  }}
+                  className={cn(
+                    "grid cursor-pointer gap-2 rounded-lg border p-3 transition sm:grid-cols-[1fr_120px_110px_40px]",
+                    i === activeServiceAreaIndex ? "border-primary ring-2 ring-primary/40" : "hover:border-primary/40",
+                  )}
+                >
                   <Input
                     placeholder="Area name e.g. DHA Phase 1-5"
                     value={area.name}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={(e) => set("serviceAreas", value.serviceAreas.map((a, idx) => (idx === i ? { ...a, name: e.target.value } : a)))}
                   />
                   <Input
@@ -300,6 +369,7 @@ export function ProviderProfileForm({
                     min={1}
                     max={50}
                     value={area.radiusKm}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={(e) => set("serviceAreas", value.serviceAreas.map((a, idx) => (idx === i ? { ...a, radiusKm: Number(e.target.value) } : a)))}
                     aria-label="Radius km"
                   />
@@ -311,7 +381,12 @@ export function ProviderProfileForm({
                     variant="ghost"
                     size="icon"
                     aria-label="Remove area"
-                    onClick={() => set("serviceAreas", value.serviceAreas.filter((_, idx) => idx !== i))}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const next = value.serviceAreas.filter((_, idx) => idx !== i);
+                      set("serviceAreas", next);
+                      if (activeServiceAreaIndex >= next.length) setActiveServiceAreaIndex(Math.max(0, next.length - 1));
+                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -319,13 +394,31 @@ export function ProviderProfileForm({
               ))}
             </div>
             <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" /> Click on the map to set the pin of the selected area&apos;s center, then adjust the radius.
+              <MapPin className="h-3 w-3" />
+              {value.serviceAreas[activeServiceAreaIndex] ? (
+                <>
+                  Click the map to move the pin for{" "}
+                  <span className="font-medium text-foreground">
+                    {value.serviceAreas[activeServiceAreaIndex].name || `area ${activeServiceAreaIndex + 1}`}
+                  </span>{" "}
+                  (highlighted). Adjust radius in the row.
+                </>
+              ) : (
+                <>Select a service area row, then click the map.</>
+              )}
             </p>
             <MapView
-              markers={value.serviceAreas.map((a) => ({ lat: a.lat, lng: a.lng, label: a.name || "Area", radiusKm: a.radiusKm }))}
-              center={{ lat: value.lat, lng: value.lng }}
-              zoom={10}
+              markers={value.serviceAreas.map((a, i) => ({
+                lat: a.lat,
+                lng: a.lng,
+                label: a.name || `Area ${i + 1}`,
+                radiusKm: a.radiusKm,
+                active: i === activeServiceAreaIndex,
+              }))}
+              center={mapCenter}
+              zoom={11}
               className="mt-3 h-72 w-full rounded-lg border"
+              onPick={updateServiceAreaPin}
             />
           </div>
         </CardContent>

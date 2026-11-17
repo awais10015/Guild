@@ -45,6 +45,7 @@ export const onboardingSchema = z.discriminatedUnion("role", [
   z.object({
     role: z.literal("customer"),
     phone: phoneSchema,
+    country: z.string().trim().min(2).max(60).optional(),
     city: z.string().trim().min(2).max(60),
     area: z.string().trim().max(80).optional().or(z.literal("")),
   }),
@@ -53,6 +54,7 @@ export const onboardingSchema = z.discriminatedUnion("role", [
     phone: phoneSchema,
     professionalTitle: z.string().trim().min(4).max(80),
     professions: z.array(objectIdSchema).min(1, "Pick at least one profession").max(5),
+    country: z.string().trim().min(2).max(60).optional(),
     city: z.string().trim().min(2).max(60),
     area: z.string().trim().max(80).optional().or(z.literal("")),
     coordinates: latLngSchema.optional(),
@@ -66,6 +68,7 @@ export const accountSchema = z.object({
   address: z
     .object({
       label: z.string().trim().max(60).optional().or(z.literal("")),
+      country: z.string().trim().max(60).optional().or(z.literal("")),
       city: z.string().trim().min(2).max(60),
       area: z.string().trim().max(80).optional().or(z.literal("")),
       streetAddress: z.string().trim().max(200).optional().or(z.literal("")),
@@ -284,4 +287,10 @@ export const professionSchema = z.object({
   name: z.string().trim().min(2).max(60),
   keywords: z.array(z.string().trim().min(1).max(40)).max(10),
   isActive: z.boolean().default(true),
+});
+
+/** Provider-suggested profession — becomes a shared taxonomy entry when new. */
+export const suggestProfessionSchema = z.object({
+  categoryId: objectIdSchema,
+  name: z.string().trim().min(2).max(60),
 });

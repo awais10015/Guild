@@ -11,6 +11,7 @@ interface Check {
 
 const CHECKS: Check[] = [
   { vars: ["MONGODB_URI"], label: "MongoDB connection", required: true },
+  { vars: ["DB_NAME"], label: "MongoDB database name (required when URI has no /dbname)", required: false },
   { vars: ["BETTER_AUTH_SECRET"], label: "Auth secret", required: true },
   { vars: ["PUSHER_APP_ID", "PUSHER_KEY", "PUSHER_SECRET", "PUSHER_CLUSTER"], label: "Pusher realtime (server)", required: false },
   { vars: ["NEXT_PUBLIC_PUSHER_KEY", "NEXT_PUBLIC_PUSHER_CLUSTER"], label: "Pusher realtime (browser)", required: false },
