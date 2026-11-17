@@ -6,6 +6,15 @@ export function normalizePair(a: string, b: string): [string, string] {
   return a < b ? [a, b] : [b, a];
 }
 
+export function conversationPairKey(userA: string, userB: string): string {
+  const [p1, p2] = normalizePair(userA, userB);
+  return `${p1}:${p2}`;
+}
+
+function isDuplicateKeyError(err: unknown): boolean {
+  return typeof err === "object" && err !== null && "code" in err && (err as { code: number }).code === 11000;
+}
+
 export async function findOrCreateConversation(
   userA: string,
   userB: string,
@@ -13,19 +22,32 @@ export async function findOrCreateConversation(
 ): Promise<string> {
   if (userA === userB) throw new ApiError(400, "Cannot start a conversation with yourself.");
   const [p1, p2] = normalizePair(userA, userB);
-  const existing = await Conversation.findOne({ participants: [p1, p2], bookingId: bookingId ?? null });
-  if (existing) return String(existing._id);
+  const pairKey = `${p1}:${p2}`;
+  const bookingFilter = bookingId ?? null;
+
+  const existing = await Conversation.findOne({
+    $or: [{ pairKey, bookingId: bookingFilter }, { participants: [p1, p2], bookingId: bookingFilter }],
+  });
+  if (existing) {
+    if (!existing.pairKey) {
+      await Conversation.updateOne({ _id: existing._id }, { $set: { pairKey } });
+    }
+    return String(existing._id);
+  }
+
   try {
     const conv = await Conversation.create({
+      pairKey,
       participants: [p1, p2],
-      bookingId: bookingId ?? null,
+      bookingId: bookingFilter,
       unread: {},
     });
     return String(conv._id);
   } catch (err) {
-    // unique index race — fetch the winner
-    const conv = await Conversation.findOne({ participants: [p1, p2], bookingId: bookingId ?? null });
-    if (conv) return String(conv._id);
+    if (isDuplicateKeyError(err)) {
+      const conv = await Conversation.findOne({ pairKey, bookingId: bookingFilter });
+      if (conv) return String(conv._id);
+    }
     throw err;
   }
 }

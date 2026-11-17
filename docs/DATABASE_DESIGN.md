@@ -167,8 +167,8 @@ Rules: creating a new quotation supersedes older `sent` ones; acceptance happens
 
 ## 9. conversations
 
-`{ participants: [ref user] (exactly 2, sorted), bookingId?: ref, lastMessage: { body, senderId, at }, unread: { [userId]: number }, isArchived: { [userId]: bool }, ts }`
-Indexes: `{ participants: 1, bookingId: 1 } unique` (order normalized) — prevents duplicate threads; `{ participants: 1 }`.
+`{ pairKey: string (sorted user ids), participants: [ref user] (exactly 2, sorted), bookingId?: ref, lastMessage: { body, senderId, at }, unread: { [userId]: number }, isArchived: { [userId]: bool }, ts }`
+Indexes: `{ pairKey: 1, bookingId: 1 } unique` — one thread per pair + booking context; `{ participants: 1 }` for inbox listing.
 `unread` is a plain Mixed object updated with atomic `$inc` per participant.
 
 ## 10. messages

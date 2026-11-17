@@ -21,7 +21,11 @@ export function StartConversationButton({ userId }: { userId: string }) {
         window.location.href = `/messages?c=${json.data.conversationId}`;
         return;
       }
-      toast.error(json.error?.message ?? "Could not open conversation.");
+      const msg =
+        typeof json.error === "string"
+          ? json.error
+          : (json.error as { message?: string } | undefined)?.message;
+      toast.error(msg ?? "Could not open conversation.");
     } catch {
       toast.error("Could not open conversation.");
     } finally {

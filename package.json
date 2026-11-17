@@ -8,7 +8,8 @@
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "db:push": "bash scripts/start-deps.sh",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "db:migrate-conversations": "tsx scripts/migrate-conversation-pair-key.ts"
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "^1.7.5",
@@ -62,6 +63,7 @@
     "next": "^16.1.1",
     "next-intl": "^4.3.4",
     "next-themes": "^0.4.6",
+    "nextjs-toploader": "^3.9.17",
     "nodemailer": "^7.0.9",
     "pusher": "^5.3.4",
     "pusher-js": "^8.6.0",

@@ -41,6 +41,8 @@ On first boot against an **empty** database the app seeds itself
 services, 2 customers, sample bookings, conversations and reviews.
 Re-seed manually with `npm run db:seed`.
 
+After upgrading messaging (conversation `pairKey` indexes), run once per database: `npm run db:migrate-conversations` (uses `.env` / Atlas URI — required on production if profile **Message** returned 500).
+
 ## Demo accounts
 
 All demo users share the same password unless you override `DEMO_PASSWORD` in the environment (default `Demo@1234`).
