@@ -65,7 +65,8 @@ export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const s = (session ?? null) as SessionData;
-  const compact = useCompactHeader(pathname, !!s?.user);
+  const user = s?.user ?? null;
+  const compact = useCompactHeader(pathname, !!user);
 
   const links = [
     { href: "/professionals", label: "Find professionals" },
@@ -73,7 +74,7 @@ export function SiteHeader() {
     { href: "/how-it-works", label: "How it works" },
   ];
 
-  const homeHref = s?.user && compact ? roleHome(s.user.role) : "/";
+  const homeHref = user && compact ? roleHome(user.role) : "/";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
@@ -90,7 +91,7 @@ export function SiteHeader() {
           <span className="text-lg font-bold tracking-tight">Guild</span>
         </Link>
 
-        {compact ? (
+        {compact && user ? (
           <div className="hidden items-center gap-4 sm:flex">
             <Link
               href="/professionals"
@@ -99,10 +100,10 @@ export function SiteHeader() {
               Browse marketplace
             </Link>
             <Link
-              href={roleHome(s.user!.role)}
+              href={roleHome(user.role)}
               className="text-sm text-muted-foreground transition hover:text-foreground"
             >
-              {s!.user!.role === "provider" ? "Studio" : s!.user!.role === "admin" ? "Admin" : "Dashboard"}
+              {user.role === "provider" ? "Studio" : user.role === "admin" ? "Admin" : "Dashboard"}
             </Link>
           </div>
         ) : (
@@ -124,7 +125,7 @@ export function SiteHeader() {
 
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
           <ThemeToggle />
-          {s?.user ? (
+          {user ? (
             <>
               <Button variant="ghost" size="icon" asChild className="relative">
                 <Link href="/notifications" aria-label="Notifications">
@@ -140,22 +141,22 @@ export function SiteHeader() {
                 <DropdownMenuTrigger asChild>
                   <button className="ml-1 flex items-center gap-2 rounded-full border py-1 pl-1 pr-2.5 transition hover:bg-muted">
                     <Avatar className="h-7 w-7">
-                      {s.user.image ? <AvatarImage src={s.user.image} alt={s.user.name} /> : null}
-                      <AvatarFallback className="bg-primary/10 text-xs text-primary">{initials(s.user.name)}</AvatarFallback>
+                      {user.image ? <AvatarImage src={user.image} alt={user.name} /> : null}
+                      <AvatarFallback className="bg-primary/10 text-xs text-primary">{initials(user.name)}</AvatarFallback>
                     </Avatar>
                     <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuLabel>
-                    <div className="text-sm font-medium">{s.user.name}</div>
-                    <div className="truncate text-xs text-muted-foreground">{s.user.email}</div>
+                    <div className="text-sm font-medium">{user.name}</div>
+                    <div className="truncate text-xs text-muted-foreground">{user.email}</div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href={roleHome(s.user.role)}>
+                    <Link href={roleHome(user.role)}>
                       <LayoutDashboard className="h-4 w-4" />
-                      {s.user.role === "provider" ? "Provider studio" : s.user.role === "admin" ? "Admin console" : "Dashboard"}
+                      {user.role === "provider" ? "Provider studio" : user.role === "admin" ? "Admin console" : "Dashboard"}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -166,9 +167,9 @@ export function SiteHeader() {
                   <DropdownMenuItem asChild>
                     <Link
                       href={
-                        s.user.role === "provider"
+                        user.role === "provider"
                           ? "/provider/profile"
-                          : s.user.role === "admin"
+                          : user.role === "admin"
                             ? "/admin"
                             : "/dashboard/settings"
                       }
@@ -221,9 +222,9 @@ export function SiteHeader() {
                     {l.label}
                   </Link>
                 ))}
-                {s?.user ? (
+                {user ? (
                   <>
-                    <Link href={roleHome(s.user.role)} onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted">
+                    <Link href={roleHome(user.role)} onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted">
                       Dashboard
                     </Link>
                     <Link href="/messages" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted">
